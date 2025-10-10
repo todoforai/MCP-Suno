@@ -4,6 +4,9 @@
   "description": "MCP server for generating music with Suno API",
   "main": "build/index.js",
   "type": "module",
+  "bin": {
+    "suno-mcp-server": "./build/index.js"
+  },
   "scripts": {
     "build": "tsc",
     "start": "node build/index.js",
