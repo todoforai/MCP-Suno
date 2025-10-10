@@ -3,14 +3,16 @@ import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import {
     CallToolRequestSchema,
-    CallToolRequest, // Added for explicit typing
+    CallToolRequest,
     ErrorCode,
     ListToolsRequestSchema,
     McpError,
     TextContent
 } from "@modelcontextprotocol/sdk/types.js";
-import axios, { AxiosInstance, AxiosError } from "axios"; // Added AxiosError
+import axios, { AxiosInstance, AxiosError } from "axios";
 import dotenv from "dotenv";
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 import {
     SunoMusicRequestArgs,
     isValidSunoMusicRequestArgs,
@@ -20,7 +22,9 @@ import {
     MusicRecordInfoResponse
 } from "./types.js";
 
-dotenv.config({ path: '../config.env' }); // Load .env from parent directory
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+dotenv.config({ path: join(__dirname, '../config.env') });
 
 // --- Suno API Configuration ---
 const SUNO_API_KEY = process.env.SunoKey;
