@@ -5,56 +5,68 @@
  */
 export interface SunoMusicRequestArgs {
     /**
-     * Lyrics content. Required for custom mode.
-     * @example "[Verse 1]\nUnder the starry sky, with a guitar in hand, I sing an old song from my homeland"
+     * Lyrics/description content.
+     * @example "A short test song"
      */
     prompt: string;
 
     /**
-     * Music style tags, comma-separated. Required for custom mode.
-     * @example "acoustic, folk, spanish"
+     * Music style tags, comma-separated. Required in custom mode.
+     * @example "acoustic, folk, pop"
      */
-    tags: string;
+    style?: string;
 
     /**
-     * Song title. Required for custom mode.
-     * @example "Homeland Song"
+     * Song title. Required in custom mode.
+     * @example "Starry Night Serenade"
      */
-    title: string;
+    title?: string;
 
     /**
-     * Model version. Optional.
-     * @enum ["chirp-v3-0", "chirp-v3-5", "chirp-v4"]
-     * @default "chirp-v4"
+     * Model version.
+     * @enum ["V3_5", "V4", "V4_5", "V4_5PLUS", "V5"]
+     * @default "V5"
      */
-    mv?: "chirp-v3-0" | "chirp-v3-5" | "chirp-v4";
+    model?: "V3_5" | "V4" | "V4_5" | "V4_5PLUS" | "V5";
 
     /**
-     * Whether to generate instrumental music. Optional.
+     * Whether to generate instrumental music.
      * @default false
      */
-    make_instrumental?: boolean;
+    instrumental?: boolean;
 
     /**
-     * Optional. Description for inspiration mode.
-     * @example "A sad song about a rainy day"
+     * Enable custom mode for advanced settings.
+     * @default false
      */
-    gpt_description_prompt?: string;
-
-     /**
-     * Optional. Task ID to continue from.
-     */
-    task_id?: string;
+    customMode?: boolean;
 
     /**
-     * Optional. Time in seconds to continue from.
+     * Music styles to exclude.
+     * @example "Heavy Metal, Upbeat Drums"
      */
-    continue_at?: number;
+    negativeTags?: string;
 
     /**
-     * Optional. Clip ID to continue from.
+     * Preferred vocal gender.
+     * @enum ["m", "f"]
      */
-    continue_clip_id?: string;
+    vocalGender?: "m" | "f";
+
+    /**
+     * Style weight (0.00-1.00).
+     */
+    styleWeight?: number;
+
+    /**
+     * Weirdness constraint (0.00-1.00).
+     */
+    weirdnessConstraint?: number;
+
+    /**
+     * Audio weight (0.00-1.00).
+     */
+    audioWeight?: number;
 }
 
 /**
@@ -63,92 +75,93 @@ export interface SunoMusicRequestArgs {
 export interface SunoAudioData {
     id: string;
     title: string;
-    status: string; // e.g., "streaming", "complete"
-    metadata: {
-        tags?: string;
-        prompt?: string;
-        duration?: number | null;
-        error_type?: string | null;
-        error_message?: string | null;
-        audio_prompt_id?: string | null;
-        gpt_description_prompt?: string;
-    };
-    audio_url: string; // This is the key field we need
-    image_url?: string;
-    video_url?: string;
-    model_name?: string;
-    image_large_url?: string;
-    major_model_version?: string;
-}
-
-/**
- * Interface for Suno API response data object
- */
-export interface SunoApiResponseData {
-    task_id: string;
-    notify_hook?: string;
-    action: "MUSIC" | "LYRICS";
-    status: "IN_PROGRESS" | "COMPLETE" | "PENDING" | "SUBMITTED" | "FAILED"; // Added more statuses
-    fail_reason?: string | null;
-    submit_time: number;
-    start_time?: number;
-    finish_time?: number;
-    progress?: string;
-    data: SunoAudioData[];
+    audioUrl: string;
+    imageUrl?: string;
+    lyric?: string;
+    duration?: number;
+    tags?: string;
+    // added for record-info details
+    streamAudioUrl?: string;
+    prompt?: string;
+    modelName?: string;
+    createTime?: string;
 }
 
 /**
  * Interface for Suno API submit music response
  */
 export interface SunoApiSubmitResponse {
-    code: string; // "success" or error code
-    message?: string;
-    data: string; // This is the task_id string for the submit response
+    code: number;
+    msg: string;
+    data: {
+        taskId: string;
+    };
 }
 
 /**
- * Interface for Suno API fetch task status response
+ * Interface for get music details arguments
  */
-export interface SunoApiFetchResponse {
-    code: string; // "success" or error code
-    message?: string;
-    data: SunoApiResponseData; // For fetching a single task, this is the task data object itself
+export interface GetMusicDetailsArgs {
+    /**
+     * Task ID from a previous music generation
+     * @example "5c79****be8e"
+     */
+    taskId: string;
 }
 
+/**
+ * Validates arguments for get_music_details tool
+ */
+export function isValidGetMusicDetailsArgs(args: any): args is GetMusicDetailsArgs {
+    return args && typeof args === 'object' && typeof args.taskId === 'string' && args.taskId.trim() !== '';
+}
+
+/**
+ * Interface for music generation record info response
+ */
+export interface MusicRecordInfoResponse {
+    code: number;
+    msg: string;
+    data: {
+        taskId: string;
+        parentMusicId: string;
+        param: string;
+        response: {
+            taskId: string;
+            sunoData: SunoAudioData[];
+        } | null;
+        status: "PENDING" | "TEXT_SUCCESS" | "FIRST_SUCCESS" | "SUCCESS" | "CREATE_TASK_FAILED" | "GENERATE_AUDIO_FAILED" | "CALLBACK_EXCEPTION" | "SENSITIVE_WORD_ERROR";
+        type: string;
+        errorCode: string | null;
+        errorMessage: string | null;
+    };
+}
 
 /**
  * Validates arguments for the generate_music tool
- * @param {any} args - The arguments to validate
- * @returns {boolean} - Whether the arguments are valid
  */
 export function isValidSunoMusicRequestArgs(args: any): args is SunoMusicRequestArgs {
     if (!args || typeof args !== 'object') return false;
 
-    // Custom mode: prompt, tags, title are required
-    if (!args.gpt_description_prompt) {
-        if (typeof args.prompt !== 'string' || args.prompt.trim() === '') return false;
-        if (typeof args.tags !== 'string' || args.tags.trim() === '') return false;
-        if (typeof args.title !== 'string' || args.title.trim() === '') return false;
-    } else { // Inspiration mode: gpt_description_prompt is required
-        if (typeof args.gpt_description_prompt !== 'string' || args.gpt_description_prompt.trim() === '') return false;
-        // In inspiration mode, prompt, tags, title might be optional or not used by the API directly
-    }
+    // prompt is always required
+    if (typeof args.prompt !== 'string' || args.prompt.trim() === '') return false;
 
-
-    if (args.mv !== undefined && !["chirp-v3-0", "chirp-v3-5", "chirp-v4"].includes(args.mv)) return false;
-    if (args.make_instrumental !== undefined && typeof args.make_instrumental !== 'boolean') return false;
-
-    // Validate continuation parameters if present
-    const hasTaskId = args.task_id !== undefined && typeof args.task_id === 'string' && args.task_id.trim() !== '';
-    const hasContinueAt = args.continue_at !== undefined && typeof args.continue_at === 'number' && args.continue_at >= 0;
-    const hasContinueClipId = args.continue_clip_id !== undefined && typeof args.continue_clip_id === 'string' && args.continue_clip_id.trim() !== '';
-
-    if (hasTaskId || hasContinueAt || hasContinueClipId) {
-        // If any continuation param is present, all three must be present
-        if (!(hasTaskId && hasContinueAt && hasContinueClipId)) {
-            return false;
+    // In custom mode, style and title are required
+    if (args.customMode === true) {
+        if (!args.instrumental) {
+            if (typeof args.style !== 'string' || args.style.trim() === '') return false;
         }
+        if (typeof args.title !== 'string' || args.title.trim() === '') return false;
     }
+
+    if (args.model !== undefined && !["V3_5", "V4", "V4_5", "V4_5PLUS", "V5"].includes(args.model)) return false;
+    if (args.instrumental !== undefined && typeof args.instrumental !== 'boolean') return false;
+    if (args.customMode !== undefined && typeof args.customMode !== 'boolean') return false;
+
+    // Validate weight parameters
+    if (args.styleWeight !== undefined && (typeof args.styleWeight !== 'number' || args.styleWeight < 0 || args.styleWeight > 1)) return false;
+    if (args.weirdnessConstraint !== undefined && (typeof args.weirdnessConstraint !== 'number' || args.weirdnessConstraint < 0 || args.weirdnessConstraint > 1)) return false;
+    if (args.audioWeight !== undefined && (typeof args.audioWeight !== 'number' || args.audioWeight < 0 || args.audioWeight > 1)) return false;
 
     return true;
 }

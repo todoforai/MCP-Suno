@@ -133,6 +133,29 @@ When returning an audio URL, please use the following HTML format for user conve
 **输出:**
 成功时，返回一个包含音频 URL 的文本内容。如果发生错误，将返回错误信息。
 
+### `get_music_details_suno`
+
+Retrieve detailed information about a music generation task by task ID.
+
+**描述：**
+查询指定 taskId 的音乐生成详情（状态、参数、生成结果音频/图片等）。
+
+**输入参数 (`inputSchema`):**
+- `taskId` (string, 必需): 从先前生成返回的任务 ID，例如 `5c79****be8e`。
+
+**状态说明:**
+- `PENDING`: 任务等待处理
+- `TEXT_SUCCESS`: 文本/歌词生成成功
+- `FIRST_SUCCESS`: 第一条音轨生成成功
+- `SUCCESS`: 全部音轨生成成功
+- `CREATE_TASK_FAILED`: 任务创建失败
+- `GENERATE_AUDIO_FAILED`: 音轨生成失败
+- `CALLBACK_EXCEPTION`: 回调异常
+- `SENSITIVE_WORD_ERROR`: 命中敏感词
+
+**输出:**
+返回任务状态与生成的歌曲信息（标题、音频地址、封面、风格、时长等）。
+
 ## 💡 示例 MCP 请求
 
 **生成自定义歌曲:**
@@ -179,6 +202,19 @@ When returning an audio URL, please use the following HTML format for user conve
       // prompt, tags, title might be needed by Suno API for continuation,
       // or it might infer from the original task.
       // Check Suno API documentation for specifics on continuation.
+    }
+  }
+}
+```
+
+**获取音乐生成详情:**
+```json
+{
+  "type": "call_tool",
+  "params": {
+    "name": "get_music_details_suno",
+    "arguments": {
+      "taskId": "5c79****be8e"
     }
   }
 }
