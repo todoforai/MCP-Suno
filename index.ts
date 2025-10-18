@@ -455,55 +455,69 @@ class SunoMcpServer {
     private async handleGetTaskStatus(args: any) {
         const status = await this.sunoApi.getTaskStatus(args.taskId);
         
-        let resultText = `Task ID: ${status.taskId}\nStatus: ${status.status}\n\n`;
-        const content: MCPContent[] = [];
-        
-        if (status.status === 'SUCCESS' && status.response?.data) {
-            resultText += `Generated tracks:\n\n`;
-            
-            status.response.data.forEach((track, index) => {
-                resultText += `Track ${index + 1}:\n`;
-                resultText += `  Title: ${track.title}\n`;
-                resultText += `  Audio: ${track.audio_url}\n`;
-                if (track.image_url) resultText += `  Image: ${track.image_url}\n`;
-                if (track.tags) resultText += `  Style: ${track.tags}\n`;
-                if (track.duration) resultText += `  Duration: ${track.duration}s\n`;
-                resultText += `\n`;
+        const tracks = status.response?.sunoData ?? [];
 
-                // Add audio as resource content
+        const metadata: ResourceContent = {
+            type: 'resource',
+            resource: {
+                uri: `https://api.sunoapi.org/api/v1/generate/record-info?taskId=${status.taskId}`,
+                mimeType: 'application/json',
+                taskId: status.taskId,
+                status: status.status,
+                type: status.type,
+                operationType: status.operationType,
+                createTime: status.createTime,
+                tracks: tracks.map(t => ({
+                    id: t.id,
+                    modelName: t.modelName,
+                    title: t.title,
+                    tags: t.tags,
+                    duration: t.duration,
+                    createTime: t.createTime,
+                    audioUrl: t.audioUrl,
+                    imageUrl: t.imageUrl
+                }))
+            }
+        };
+
+        if (status.status === 'FAILED') {
+            metadata.resource.errorCode = status.errorCode;
+            metadata.resource.errorMessage = status.errorMessage;
+        }
+
+        const content: MCPContent[] = [metadata];
+
+        if ((status.status === 'SUCCESS' || status.status === 'FIRST_SUCCESS') && tracks.length) {
+            tracks.forEach(track => {
                 const audioResource: ResourceContent = {
                     type: 'resource',
                     resource: {
-                        uri: track.audio_url,
-                        mimeType: 'audio/mpeg'
+                        uri: track.audioUrl,
+                        mimeType: 'audio/mpeg',
+                        title: track.title,
+                        modelName: track.modelName,
+                        tags: track.tags,
+                        duration: track.duration,
+                        createTime: track.createTime
                     }
                 };
                 content.push(audioResource);
 
-                // Add image as resource if available
-                if (track.image_url) {
+                if (track.imageUrl) {
                     const imageResource: ResourceContent = {
                         type: 'resource',
                         resource: {
-                            uri: track.image_url,
-                            mimeType: 'image/jpeg'
+                            uri: track.imageUrl,
+                            mimeType: 'image/jpeg',
+                            title: track.title,
+                            modelName: track.modelName,
+                            createTime: track.createTime
                         }
                     };
                     content.push(imageResource);
                 }
             });
-        } else if (status.status === 'FAILED') {
-            resultText += `Error: ${status.errorMessage || 'Unknown error'}\n`;
-        } else if (status.status === 'GENERATING' || status.status === 'PENDING') {
-            resultText += `Task is still processing. Please check again later.\n`;
         }
-
-        // Add text content first
-        const textContent: TextContent = {
-            type: 'text',
-            text: resultText
-        };
-        content.unshift(textContent);
 
         return { content };
     }

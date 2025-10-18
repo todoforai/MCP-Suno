@@ -5,6 +5,22 @@ export interface SunoApiConfig {
   baseUrl?: string;
 }
 
+export interface SunoTrack {
+  id: string;
+  audioUrl: string;
+  sourceAudioUrl: string;
+  streamAudioUrl: string;
+  sourceStreamAudioUrl: string;
+  imageUrl: string;
+  sourceImageUrl: string;
+  prompt: string;
+  modelName: string;
+  title: string;
+  tags: string;
+  createTime: number;
+  duration: number;
+}
+
 export interface GenerateMusicRequest {
   prompt: string;
   customMode?: boolean;
@@ -79,11 +95,18 @@ export interface AudioTrack {
 
 export interface TaskStatusResponse {
   taskId: string;
-  status: 'GENERATING' | 'SUCCESS' | 'FAILED' | 'PENDING';
-  response?: {
-    data: AudioTrack[];
+  parentMusicId: string;
+  param: string;
+  response: {
+    taskId: string;
+    sunoData: SunoTrack[];
   };
-  errorMessage?: string;
+  status: 'GENERATING' | 'SUCCESS' | 'FAILED' | 'PENDING' | 'FIRST_SUCCESS';
+  type: string;
+  operationType: string;
+  errorCode: string | null;
+  errorMessage: string | null;
+  createTime: number;
 }
 
 export interface CreditsResponse {

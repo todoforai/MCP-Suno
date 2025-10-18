@@ -26,6 +26,7 @@ export interface ResourceContent {
     uri: string;
     mimeType?: string;
     blob?: string; // base64
+    [key: string]: any; // allow attaching structured metadata (json-serializable)
   };
   annotations?: any;
 }
