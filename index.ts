@@ -457,33 +457,29 @@ class SunoMcpServer {
         
         const tracks = status.response?.sunoData ?? [];
 
-        // If successful, return just the track resources
+        // If successful, return track URLs as resource_link(s)
         if ((status.status === 'SUCCESS' || status.status === 'FIRST_SUCCESS') && tracks.length) {
-            const content: MCPContent[] = [];
+            const content: any[] = [];
             
             tracks.forEach((track, index) => {
-                const trackResource: ResourceContent = {
-                    type: 'resource',
-                    resource: {
-                        uri: track.audioUrl,
-                        mimeType: 'audio/mpeg',
-                        // Track metadata
-                        trackIndex: index + 1,
-                        id: track.id,
-                        title: track.title,
-                        modelName: track.modelName,
-                        tags: track.tags,
-                        duration: track.duration,
-                        createTime: track.createTime,
-                        // Additional URLs
-                        imageUrl: track.imageUrl,
-                        sourceAudioUrl: track.sourceAudioUrl,
-                        streamAudioUrl: track.streamAudioUrl,
-                        // Include prompt if available
-                        ...(track.prompt && { prompt: track.prompt })
-                    }
-                };
-                content.push(trackResource);
+                // Main audio resource link with all metadata
+                content.push({
+                    type: "resource_link",
+                    uri: track.audioUrl,
+                    mimeType: 'audio/mpeg',
+                    // Additional metadata as custom properties
+                    trackIndex: index + 1,
+                    id: track.id,
+                    title: track.title,
+                    modelName: track.modelName,
+                    tags: track.tags,
+                    duration: track.duration,
+                    createTime: track.createTime,
+                    imageUrl: track.imageUrl,
+                    sourceAudioUrl: track.sourceAudioUrl,
+                    streamAudioUrl: track.streamAudioUrl,
+                    ...(track.prompt && { prompt: track.prompt })
+                });
             });
             
             return { content };
