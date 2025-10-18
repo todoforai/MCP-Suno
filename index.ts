@@ -457,28 +457,41 @@ class SunoMcpServer {
         
         const tracks = status.response?.sunoData ?? [];
 
-        // If successful, return track URLs as resource_link(s)
+        // If successful, return track URLs as resources with JSON metadata in text
         if ((status.status === 'SUCCESS' || status.status === 'FIRST_SUCCESS') && tracks.length) {
             const content: any[] = [];
             
+            // Add status text first
+            content.push({
+                type: "text",
+                text: `Task ${args.taskId} completed successfully! Generated ${tracks.length} track(s):`
+            });
+            
+            // Add each track as a resource with JSON data in text field
             tracks.forEach((track, index) => {
-                // Main audio resource link with all metadata
-                content.push({
-                    type: "resource_link",
-                    uri: track.audioUrl,
-                    mimeType: 'audio/mpeg',
-                    // Additional metadata as custom properties
+                const trackData = {
                     trackIndex: index + 1,
                     id: track.id,
                     title: track.title,
+                    sourceAudioUrl: track.sourceAudioUrl,
+                    streamAudioUrl: track.streamAudioUrl,
+                    sourceStreamAudioUrl: track.sourceStreamAudioUrl,
+                    imageUrl: track.imageUrl,
+                    sourceImageUrl: track.sourceImageUrl,
                     modelName: track.modelName,
                     tags: track.tags,
                     duration: track.duration,
                     createTime: track.createTime,
-                    imageUrl: track.imageUrl,
-                    sourceAudioUrl: track.sourceAudioUrl,
-                    streamAudioUrl: track.streamAudioUrl,
+                    mimeType: 'audio/mpeg',
                     ...(track.prompt && { prompt: track.prompt })
+                };
+
+                content.push({
+                    type: "resource",
+                    resource: {
+                        uri: track.audioUrl,
+                        text: JSON.stringify(trackData, null, 2)
+                    }
                 });
             });
             
