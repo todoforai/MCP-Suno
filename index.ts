@@ -457,69 +457,49 @@ class SunoMcpServer {
         
         const tracks = status.response?.sunoData ?? [];
 
-        const metadata: ResourceContent = {
-            type: 'resource',
-            resource: {
-                uri: `https://api.sunoapi.org/api/v1/generate/record-info?taskId=${status.taskId}`,
-                mimeType: 'application/json',
-                taskId: status.taskId,
-                status: status.status,
-                type: status.type,
-                operationType: status.operationType,
-                createTime: status.createTime,
-                tracks: tracks.map(t => ({
-                    id: t.id,
-                    modelName: t.modelName,
-                    title: t.title,
-                    tags: t.tags,
-                    duration: t.duration,
-                    createTime: t.createTime,
-                    audioUrl: t.audioUrl,
-                    imageUrl: t.imageUrl
-                }))
-            }
-        };
-
-        if (status.status === 'FAILED') {
-            metadata.resource.errorCode = status.errorCode;
-            metadata.resource.errorMessage = status.errorMessage;
-        }
-
-        const content: MCPContent[] = [metadata];
-
+        // If successful, return just the track resources
         if ((status.status === 'SUCCESS' || status.status === 'FIRST_SUCCESS') && tracks.length) {
-            tracks.forEach(track => {
-                const audioResource: ResourceContent = {
+            const content: MCPContent[] = [];
+            
+            tracks.forEach((track, index) => {
+                const trackResource: ResourceContent = {
                     type: 'resource',
                     resource: {
                         uri: track.audioUrl,
                         mimeType: 'audio/mpeg',
+                        // Track metadata
+                        trackIndex: index + 1,
+                        id: track.id,
                         title: track.title,
                         modelName: track.modelName,
                         tags: track.tags,
                         duration: track.duration,
-                        createTime: track.createTime
+                        createTime: track.createTime,
+                        // Additional URLs
+                        imageUrl: track.imageUrl,
+                        sourceAudioUrl: track.sourceAudioUrl,
+                        streamAudioUrl: track.streamAudioUrl,
+                        // Include prompt if available
+                        ...(track.prompt && { prompt: track.prompt })
                     }
                 };
-                content.push(audioResource);
-
-                if (track.imageUrl) {
-                    const imageResource: ResourceContent = {
-                        type: 'resource',
-                        resource: {
-                            uri: track.imageUrl,
-                            mimeType: 'image/jpeg',
-                            title: track.title,
-                            modelName: track.modelName,
-                            createTime: track.createTime
-                        }
-                    };
-                    content.push(imageResource);
-                }
+                content.push(trackResource);
             });
+            
+            return { content };
         }
 
-        return { content };
+        // For pending/failed/other statuses, return simple text
+        const statusText = status.status === 'FAILED' 
+            ? `Task ${args.taskId} FAILED: ${status.errorMessage || 'Unknown error'}`
+            : `Task ${args.taskId} status: ${status.status}`;
+
+        return {
+            content: [{
+                type: "text",
+                text: statusText
+            }]
+        };
     }
 
     private async handleGetLyricsDetails(args: any) {
