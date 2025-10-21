@@ -1,25 +1,41 @@
 {
-  "name": "suno-mcp-server",
-  "version": "0.1.0",
+  "name": "@todoforai/suno-mcp-server",
+  "version": "0.2.0",
   "description": "MCP server for generating music with Suno API",
-  "main": "build/index.js",
+  "main": "dist/index.js",
   "type": "module",
   "bin": {
-    "suno-mcp-server": "./build/index.js"
+    "suno-mcp-server": "dist/index.js"
   },
   "scripts": {
     "build": "tsc",
-    "start": "node build/index.js",
-    "dev": "tsc -w & nodemon build/index.js",
-    "prepare": "npm run build"
+    "start": "node dist/index.js",
+    "dev": "tsc -w & nodemon dist/index.js",
+    "prepare": "npm run build",
+    "prepublishOnly": "npm run build"
   },
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "keywords": [
     "mcp",
     "suno",
-    "ai-music"
+    "ai-music",
+    "model-context-protocol"
   ],
   "author": "Roo",
   "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/todoforai/MCP-Suno.git"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
   "dependencies": {
     "@modelcontextprotocol/sdk": "latest",
     "axios": "^1.6.0",
